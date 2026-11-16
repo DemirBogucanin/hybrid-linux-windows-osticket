@@ -1,0 +1,46 @@
+# Secrets and local state — never commit
+*.env
+VM_PASS*
+secrets/
+credentials/
+ost_cookies.txt
+LAB-CREDENTIALS*
+readme_b64.txt
+
+# Keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+stage/ssh/
+
+# Large downloads / archives
+*.zip
+
+# Virtual machine files
+*.vmdk
+*.vmem
+*.vmss
+*.vmsd
+*.vmxf
+*.vmx
+*.nvram
+*.scoreboard
+*.lck/
+*.log
+Ubuntu 64-bit*
+Windows 10 x64*
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Python bytecode
+stage/__pycache__/
+*.pyc
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<title>Ubuntu Server u Windows AD domenu + osTicket — skripta projekta</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Calibri", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #1e2430;
+    margin: 0;
+  }
+  h1 {
+    font-size: 22pt;
+    margin: 0 0 4px 0;
+    color: #0b3d6b;
+    line-height: 1.2;
+  }
+  .sub {
+    color: #5a6b80;
+    font-size: 10.5pt;
+    margin-bottom: 4px;
+  }
+  .rule {
+    height: 3px;
+    background: linear-gradient(90deg, #0b3d6b 0%, #2e86c1 60%, #e8f1f8 100%);
+    margin: 12px 0 22px 0;
+    border-radius: 2px;
+  }
+  h2 {
+    font-size: 14pt;
+    color: #0b3d6b;
+    margin: 26px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cfdce8;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: #14507f;
+    margin: 16px 0 6px 0;
+    page-break-after: avoid;
+  }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 8px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 9.3pt;
+    background: #eef3f8;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #0b3d6b;
+  }
+  pre {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 8.8pt;
+    line-height: 1.42;
+    background: #f7fafc;
+    border: 1px solid #d6e3ee;
+    border-left: 4px solid #2e86c1;
+    border-radius: 4px;
+    padding: 9px 11px;
+    margin: 8px 0 12px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    page-break-inside: avoid;
+  }
+  pre code { background: none; padding: 0; font-size: 8.8pt; color: #16324a; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 14px 0;
+    font-size: 9.3pt;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #0b3d6b;
+    color: #fff;
+    text-align: left;
+    padding: 6px 8px;
+    font-weight: 600;
+  }
+  td {
+    border-bottom: 1px solid #dde7f0;
+    padding: 6px 8px;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f5f9fc; }
+  .note {
+    background: #fff8e6;
+    border: 1px solid #f0d48a;
+    border-left: 4px solid #e0a800;
+    border-radius: 4px;
+    padding: 9px 12px;
+    margin: 10px 0;
+    font-size: 9.6pt;
+    page-break-inside: avoid;
+  }
+  .ok {
+    background: #eefaf1;
+    border: 1px solid #b7e2c3;
+    border-left: 4px solid #2e9e4f;
+    border-radius: 4px;
+    padding: 9px 12px;
+    margin: 10px 0;
+    font-size: 9.6pt;
+    page-break-inside: avoid;
+  }
+  .bad {
+    background: #fdf0f0;
+    border: 1px solid #f0bcbc;
+    border-left: 4px solid #c0392b;
+    border-radius: 4px;
+    padding: 9px 12px;
+    margin: 10px 0;
+    font-size: 9.6pt;
+    page-break-inside: avoid;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    color: #fff;
+    vertical-align: middle;
+  }
+  .b-done { background: #2e9e4f; }
+  .b-prog { background: #e0a800; }
+  .b-todo { background: #8a97a8; }
+  .cover-meta {
+    margin-top: 18px;
+    font-size: 9.5pt;
+    color: #5a6b80;
+    line-height: 1.7;
+  }
+  .toc {
+    background: #f5f9fc;
+    border: 1px solid #d6e3ee;
+    border-radius: 5px;
+    padding: 12px 18px;
+    margin: 16px 0 8px 0;
+    font-size: 9.8pt;
+  }
+  .toc ol { margin: 4px 0; }
+  .keep { page-break-inside: avoid; }
+  .shot { margin: 12px 0; page-break-inside: avoid; }
+  .shot img { width: 100%; border: 1px solid #d6e3ee; border-radius: 4px; }
+  .shot .cap { font-size: 8.8pt; color: #5a6b80; margin: 4px 0 0 0; }
+</style>
+</head>
+<body>
+
+<h1>Ubuntu Server u Windows AD domenu<br>+ osTicket sa LDAP prijavom</h1>
+<div class="sub">Skripta projekta — hibridno okruženje (Linux + Windows)</div>
+<div class="rule"></div>
+
+<div class="cover-meta">
+  <strong>Projekat:</strong> Hibridno okruženje i Enterprise Tiketing Sustav<br>
+  <strong>Domen:</strong> demo.lab &nbsp;•&nbsp; <strong>Ubuntu hostname:</strong> ubuntu<br>
+  <strong>Ključne tehnologije:</strong> Windows Server (AD DS, DNS), Ubuntu Server, netplan, chrony, realmd/SSSD, Apache, MariaDB, PHP, osTicket<br>
+  <strong>Status:</strong> integracija završena i testirana — domenski nalog se koristi i za klijentski i za agentski login u osTicket-u
+</div>
+
+<div class="toc">
+  <strong>Sadržaj</strong>
+  <ol>
+    <li>Cilj projekta</li>
+    <li>Arhitektura i mrežni plan</li>
+    <li>Tri stvari koje sve drže na okupu</li>
+    <li>Faza 1 — Windows Server (domenski kontroler)</li>
+    <li>Faza 2 — Ubuntu: instalacija i mreža</li>
+    <li>Faza 3 — Provera DNS-a</li>
+    <li>Faza 4 — Vreme (chrony)</li>
+    <li>Faza 5 — Pridruživanje domenu</li>
+    <li>Faza 6 — LAMP (Apache, MariaDB, PHP)</li>
+    <li>Faza 7 — Instalacija osTicket-a</li>
+    <li>Faza 8 — LDAP integracija</li>
+    <li>Komande koje moraš da znaš</li>
+    <li>Problemi koje smo rešili</li>
+    <li>Status i šta sledi</li>
+  </ol>
+</div>
+
+<h2>1. Cilj projekta</h2>
+<p>Povezati <strong>Ubuntu Server</strong> na postojeći Windows <strong>Active Directory</strong> domen <code>demo.lab</code>, a zatim na Ubuntu podići <strong>osTicket</strong> tiketing sistem sa <strong>LDAP integracijom</strong>, tako da se korisnici prijavljuju svojim standardnim Windows domenskim nalozima.</p>
+<p>Ukratko: <em>jedan Windows svet (domen) i jedan Linux svet (aplikacija) — povezani tako da korisnik ima jedan nalog za sve.</em></p>
+
+<h2>2. Arhitektura i mrežni plan</h2>
+<table>
+  <tr><th>Uloga</th><th>Mašina</th><th>IP adresa</th><th>Napomena</th></tr>
+  <tr><td>Ruter / gateway</td><td>kućna mreža</td><td><code>192.168.31.1</code></td><td>izlaz u internet</td></tr>
+  <tr><td>Host</td><td>Windows (VMware Workstation)</td><td><code>192.168.31.107</code></td><td>fizička mreža, wired</td></tr>
+  <tr><td>Domenski kontroler + DNS</td><td>Windows Server</td><td><code>192.168.31.10</code></td><td>domen <code>demo.lab</code>, bridged</td></tr>
+  <tr><td>Aplikativni server</td><td>Ubuntu Server</td><td><code>192.168.31.20</code></td><td>osTicket, bridged</td></tr>
+</table>
+<p><strong>Mrežni režim:</strong> obe virtuelne mašine su na <strong>Bridged</strong> (VMnet0). Time su ravnopravni članovi iste fizičke mreže i vide se u oba smera.</p>
+
+<table>
+  <tr><th>Postavka</th><th>Windows Server</th><th>Ubuntu Server</th></tr>
+  <tr><td>IP adresa</td><td><code>192.168.31.10/24</code></td><td><code>192.168.31.20/24</code></td></tr>
+  <tr><td>Gateway</td><td><code>192.168.31.1</code></td><td><code>192.168.31.1</code></td></tr>
+  <tr><td>DNS</td><td><code>127.0.0.1</code> + forwarder <code>192.168.31.1</code></td><td><code>192.168.31.10</code></td></tr>
+  <tr><td>Search domen</td><td><code>demo.lab</code></td><td><code>demo.lab</code></td></tr>
+</table>
+
+<h2>3. Tri stvari koje sve drže na okupu</h2>
+<table>
+  <tr><th>#</th><th>Uslov</th><th>Zašto</th></tr>
+  <tr><td>1</td><td>Stalan identitet (fiksna IP + ime)</td><td>DNS zapisi, Kerberos i linkovi ne trpe promenu adrese</td></tr>
+  <tr><td>2</td><td>DNS pokazuje na DC</td><td>samo DC zna <code>demo.lab</code> i SRV zapise domena</td></tr>
+  <tr><td>3</td><td>Tačno vreme</td><td>Kerberos odbija sat koji odstupa više od 5 minuta</td></tr>
+</table>
+
+<div class="note">
+<strong>Ključni pojmovi ukratko:</strong><br>
+<strong>IP + maska</strong> — adresa i „veličina ulice“ (<code>/24</code> = 254 domaćina).<br>
+<strong>Gateway</strong> — izlaz iz lokalne mreže; bez njega nema interneta.<br>
+<strong>DNS</strong> — imenik: prevodi ime u IP adresu.<br>
+<strong>DHCP</strong> — automatska dodela adrese (menja se), nasuprot <strong>statičkoj</strong> (fiksnoj) adresi.<br>
+<strong>SRV zapis</strong> — DNS zapis koji kaže „ovde je domenski kontroler“.
+</div>
+
+<h2>4. Faza 1 — Windows Server (domenski kontroler) <span class="badge b-done">GOTOVO</span></h2>
+<p>Cilj: Windows Server mora biti vidljiv u pravoj mreži, imati ispravan gateway i prosleđivati DNS upite u internet.</p>
+<h3>4.1 VMware podešavanja</h3>
+<ul>
+  <li>Network Adapter → <strong>Bridged: Connected directly to the physical network</strong></li>
+  <li>Virtual Network Editor → VMnet0 → <strong>Realtek PCIe GbE Family Controller</strong> (ne „Automatic“)</li>
+</ul>
+<h3>4.2 Mreža unutar Windows Servera</h3>
+<pre><code>IP:        192.168.31.10
+Maska:     255.255.255.0
+Gateway:   192.168.31.1
+DNS:       127.0.0.1        (server je sam sebi DNS)</code></pre>
+<h3>4.3 DNS forwarder i zapisi (PowerShell, kao administrator)</h3>
+<pre><code># prosleđivanje upita za spoljna imena ka ruteru
+Set-DnsServerForwarder -IPAddress 192.168.31.1
+
+# A + PTR zapis za Ubuntu (ime -&gt; IP i IP -&gt; ime)
+Add-DnsServerResourceRecordA -Name "ubuntu" -ZoneName "demo.lab" -IPv4Address 192.168.31.20 -CreatePtr
+
+# dozvoli ping (ICMP) ka serveru
+New-NetFirewallRule -DisplayName "ICMPv4-In" -Protocol ICMPv4 -IcmpType 8 -Direction Inbound -Action Allow</code></pre>
+<div class="bad">Bez <strong>forwardera</strong> DC razrešava samo <code>demo.lab</code>, a ne i <code>google.com</code> — tada Ubuntu ima mrežu ali ne i internet.</div>
+
+<h2>5. Faza 2 — Ubuntu: instalacija i mreža <span class="badge b-done">GOTOVO</span></h2>
+<p>Instalacija Ubuntu Servera: hostname <code>ubuntu</code>, korisnik <code>demir</code>, štiklirano <strong>Install OpenSSH server</strong>, bez snap paketa.</p>
+
+<h3>5.1 Netplan — fajl <code>/etc/netplan/00-installer-config.yaml</code></h3>
+<pre><code>network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      dhcp6: false
+      addresses: [192.168.31.20/24]
+      routes:
+        - to: default
+          via: 192.168.31.1
+      nameservers:
+        addresses: [192.168.31.10]
+        search: [demo.lab]</code></pre>
+<p><strong>Indentacija:</strong> 2 razmaka po nivou, nikada tabovi. <code>dhcp4: false</code> = ne traži adresu od rutera.</p>
+
+<h3>5.2 Postupak primene</h3>
+<pre><code>sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.bak
+ls -l /etc/netplan/                                     # provera da backup postoji
+sudo cat /etc/netplan/00-installer-config.yaml          # provera sadržaja PRE primene
+sudo chmod 600 /etc/netplan/00-installer-config.yaml    # samo root sme da čita
+sudo netplan generate                                   # provera sintakse (ne menja mrežu)
+sudo netplan try                                        # probno, auto-rollback za 120 s
+sudo netplan apply                                      # trajna primena</code></pre>
+<div class="note"><code>netplan try</code> je zaštita: ako ne potvrdiš u 120 sekundi, sam vraća staru konfiguraciju. Koristi ga uvek kad radiš preko SSH-a.</div>
+
+<h2>6. Faza 3 — Provera DNS-a <span class="badge b-done">GOTOVO</span></h2>
+<pre><code>ip -br a                          # adrese interfejsa
+ip route                          # podrazumevana ruta (default via ...)
+resolvectl status ens33           # koji DNS interfejs stvarno koristi
+ping -c2 192.168.31.1             # ruter
+ping -c2 192.168.31.10            # domenski kontroler
+getent hosts demo.lab             # mora vratiti 192.168.31.10
+getent hosts archive.ubuntu.com   # mora vratiti IP (provera forwardera)</code></pre>
+<div class="ok"><code>getent hosts demo.lab</code> → <code>192.168.31.10 demo.lab</code> je dokaz da DNS radi isto kao što ga koriste aplikacije.</div>
+<div class="note">Ako se imena spoljnih sajtova razrešavaju samo u IPv6 (a IPv6 rute nema), nateraj <code>apt</code> na IPv4:
+<pre><code>echo 'Acquire::ForceIPv4 "true";' | sudo tee /etc/apt/apt.conf.d/99force-ipv4</code></pre></div>
+
+<h2>7. Faza 4 — Vreme (chrony) <span class="badge b-prog">DELIMIČNO</span></h2>
+<p>Kerberos tiketi imaju vremensku oznaku, pa satovi moraju biti usklađeni (tolerancija 5 minuta).</p>
+<pre><code>sudo apt install -y chrony
+
+# Ubuntu 24.04+: izvori su u sources.d, ne u chrony.conf
+echo 'server 192.168.31.10 iburst' | sudo tee /etc/chrony/sources.d/ad-dc.sources
+echo 'maxdistance 16' | sudo tee -a /etc/chrony/chrony.conf
+
+sudo systemctl restart chrony
+sleep 20
+chronyc sources -v        # ^* = izabran izvor, ^? = odbijen, ^+ = rezervni
+chronyc tracking          # Reference ID C0A81F0A = 192.168.31.10
+sudo chronyc ntpdata 192.168.31.10   # detalji; traži sudo (inače "501 Not authorised")
+timedatectl               # System clock synchronized: yes</code></pre>
+<div class="note">Windows <code>w32time</code> je na VM-u često javljao veliku „root dispersion“ (8 s), pa ga je chrony odbijao (<code>^?</code>). Vreme je i tako tačno preko javnog NTP pool-a, a razlika prema DC-u je bila ~15 ms — daleko unutar Kerberos tolerancije. Na Windowsu se popravlja sa:</div>
+<pre><code>Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer" -Name Enabled -Value 1
+Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\Config" -Name AnnounceFlags -Value 5
+w32tm /config /manualpeerlist:"time.windows.com,0x8" /syncfromflags:manual /reliable:yes /update
+Restart-Service w32time
+w32tm /resync
+w32tm /query /status</code></pre>
+
+<h2>8. Faza 5 — Pridruživanje domenu <span class="badge b-done">GOTOVO</span></h2>
+<h3>8.1 Paketi</h3>
+<pre><code>sudo apt update
+sudo apt install -y sssd-ad sssd-tools realmd adcli krb5-user packagekit oddjob-mkhomedir
+sudo pam-auth-update --enable mkhomedir</code></pre>
+<table>
+  <tr><th>Paket</th><th>Čemu služi</th></tr>
+  <tr><td><code>realmd</code></td><td>komanda <code>realm</code> — otkrivanje i pridruživanje domenu</td></tr>
+  <tr><td><code>adcli</code></td><td>stvarno pridruživanje AD domenu</td></tr>
+  <tr><td><code>sssd-ad</code></td><td>servis koji omogućava prijavu domenskim nalozima</td></tr>
+  <tr><td><code>sssd-tools</code></td><td>alati za proveru (<code>sssctl</code>)</td></tr>
+  <tr><td><code>krb5-user</code></td><td>Kerberos klijent (tiketi)</td></tr>
+  <tr><td><code>oddjob-mkhomedir</code></td><td>pravi home folder pri prvoj prijavi</td></tr>
+  <tr><td><code>packagekit</code></td><td>pomoćni paket za <code>realmd</code></td></tr>
+</table>
+
+<h3>8.2 Otkrivanje i pridruživanje</h3>
+<pre><code>realm discover demo.lab                        # mora ispisati realm-name: DEMO.LAB
+sudo realm join --user=Administrator demo.lab -v
+realm list                                     # configured: kerberos-member
+id administrator@demo.lab                      # dokaz da AD nalog postoji lokalno
+sudo sssctl domain-status demo.lab             # Online status: Online</code></pre>
+
+<h3>8.3 Pravi test</h3>
+<pre><code>su - administrator@demo.lab</code></pre>
+<div class="ok">Uspeh izgleda ovako:
+<pre><code>Creating directory '/home/administrator@demo.lab'.
+administrator@demo.lab@ubuntu:~$</code></pre>
+Time je dokazano da Ubuntu prihvata <strong>domenske naloge</strong>.</div>
+
+<h2>9. Faza 6 — LAMP (Apache, MariaDB, PHP) <span class="badge b-done">GOTOVO</span></h2>
+<p><strong>Stanje na serveru (provereno 15.11.2026):</strong> Apache <code>2.4.66</code>, MariaDB <code>11.8.6</code>, PHP <code>8.5.4</code> sa uključenim <code>php-ldap</code>; servisi <code>apache2</code> i <code>mariadb</code> su aktivni.</p>
+<pre><code>sudo apt install -y apache2 mariadb-server \
+  php php-mysql php-ldap php-mbstring php-intl php-xml php-gd php-zip \
+  php-curl php-apcu php-imap libapache2-mod-php unzip wget</code></pre>
+<table>
+  <tr><th>Paket</th><th>Zašto</th></tr>
+  <tr><td><code>apache2</code></td><td>web server</td></tr>
+  <tr><td><code>mariadb-server</code></td><td>baza podataka</td></tr>
+  <tr><td><code>libapache2-mod-php</code></td><td>PHP unutar Apache-a</td></tr>
+  <tr><td><code>php-mysql</code></td><td>veza PHP — baza</td></tr>
+  <tr><td><code>php-ldap</code></td><td><strong>obavezno</strong> za LDAP/AD prijavu</td></tr>
+  <tr><td><code>php-mbstring, php-intl, php-xml, php-gd, php-zip</code></td><td>zahtevi osTicket-a</td></tr>
+</table>
+<pre><code>php -v                       # provera verzije
+apache2 -v
+systemctl status apache2 --no-pager</code></pre>
+<div class="note"><strong>Napomena o PHP verziji:</strong> osTicket 1.18.4 zvanično podržava PHP 8.2–8.4. Ovaj server ima PHP 8.5.4 — van zvaničnog opsega, ali prema iskustvima iz zajednice radi. Ako se pojave greške 500, rešenje je instalacija PHP 8.4.</div>
+
+<h3>9.1 Baza i korisnik</h3>
+<pre><code>sudo mysql_secure_installation
+
+sudo mysql &lt;&lt;'SQL'
+CREATE DATABASE IF NOT EXISTS osticket CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'osticket'@'localhost' IDENTIFIED BY '&lt;DB_LOZINKA&gt;';
+ALTER USER 'osticket'@'localhost' IDENTIFIED BY '&lt;DB_LOZINKA&gt;';
+GRANT ALL PRIVILEGES ON osticket.* TO 'osticket'@'localhost';
+FLUSH PRIVILEGES;
+SQL
+
+# provera da se korisnik može prijaviti
+mysql -u osticket -p'&lt;DB_LOZINKA&gt;' -e "USE osticket; SELECT 'OK';"</code></pre>
+
+<h2>10. Faza 7 — Instalacija osTicket-a <span class="badge b-done">GOTOVO</span></h2>
+<pre><code>cd /tmp
+sudo wget https://github.com/osTicket/osTicket/releases/download/v1.18.4/osTicket-v1.18.4.zip
+sudo unzip osTicket-v1.18.4.zip -d /var/www/html/
+sudo mv /var/www/html/upload /var/www/html/osticket
+sudo cp /var/www/html/osticket/include/ost-sampleconfig.php /var/www/html/osticket/include/ost-config.php
+sudo chown -R www-data:www-data /var/www/html/osticket
+sudo chmod -R 755 /var/www/html/osticket
+sudo chmod 644 /var/www/html/osticket/include/ost-config.php</code></pre>
+<p>Zatim se otvara veb installer:</p>
+<pre><code>http://192.168.31.20/osticket/setup/</code></pre>
+<table>
+  <tr><th>Polje</th><th>Vrednost</th></tr>
+  <tr><td>Helpdesk Name</td><td>Demo Helpdesk</td></tr>
+  <tr><td>Default Email</td><td>helpdesk@demo.lab</td></tr>
+  <tr><td>Admin Email</td><td>administrator@demo.lab</td></tr>
+  <tr><td>Database host</td><td>localhost</td></tr>
+  <tr><td>Database name</td><td>osticket</td></tr>
+  <tr><td>Database user</td><td>osticket</td></tr>
+  <tr><td>Database password</td><td>&lt;DB_LOZINKA&gt;</td></tr>
+</table>
+<p>Posle instalacije obavezno:</p>
+<pre><code>sudo rm -rf /var/www/html/osticket/setup
+sudo chmod 644 /var/www/html/osticket/include/ost-config.php</code></pre>
+<div class="bad">Ako se <code>setup/</code> ne obriše, bilo ko može ponovo da pokrene installer i preuzme sistem.</div>
+
+<div class="ok"><strong>Stanje (provereno 15.11.2026):</strong> osTicket <strong>1.18.4</strong> je instaliran 07.11.2026. u <code>/var/www/html/osticket</code>, helpdesk se zove <strong>Demo Helpdesk</strong>, <code>setup/</code> je obrisan, a <code>ost-config.php</code> je zaključan. Postoje dva agentska naloga: <code>dadmin</code> (administrator@demo.lab, lokalna prijava — lab lozinka <code>&lt;ADMIN_LOZINKA&gt;</code>) i <code>tdelic</code> (tdelic@demo.lab, prijava domenskom lozinkom preko LDAP-a).</div>
+
+<h2>11. Faza 8 — LDAP integracija <span class="badge b-done">GOTOVO</span></h2>
+<p>Cilj: korisnik se u osTicket-u prijavljuje svojim <strong>Windows domenskim nalogom</strong>. Integracija je završena i testirana 15.11.2026. — domenska lozinka radi i za klijentski portal i za agentski panel.</p>
+
+<h3>11.1 Servisni nalog u AD-u</h3>
+<p>Servisni nalog <code>svc-osticket</code> postoji u <code>CN=Users</code> i ima <strong>samo pravo čitanja</strong> direktorijuma. Lozinka se u osTicket-u čuva šifrovana (klasa <code>Crypto</code>), pa se u bazi vidi samo kao <code>$2$...</code>.</p>
+<pre><code>Bind DN:  CN=svc-osticket,CN=Users,DC=demo,DC=lab
+Lozinka:  &lt;BIND_LOZINKA&gt;        # lab okruženje</code></pre>
+<div class="ok">StartTLS bind je proveren sa <code>ldapwhoami</code> i vraća <code>u:DEMO\svc-osticket</code> — servisni nalog ispravno čita direktorijum.</div>
+
+<h3>11.2 Plugin u osTicket-u (instalirano)</h3>
+<p><code>Admin Panel → Manage → Plugins → LDAP Authentication and Lookup</code> — verzija <strong>0.6.2</strong>, instanca <strong>AD demo.lab</strong>, status <strong>Active</strong>.</p>
+<table>
+  <tr><th>Polje</th><th>Stvarna vrednost</th></tr>
+  <tr><td>Default Domain</td><td><code>demo.lab</code></td></tr>
+  <tr><td>DNS servers</td><td><code>192.168.31.10</code></td></tr>
+  <tr><td>LDAP servers</td><td><code>192.168.31.10:389</code></td></tr>
+  <tr><td>Use TLS</td><td>uključeno (StartTLS na portu 389)</td></tr>
+  <tr><td>Search User (Bind DN)</td><td><code>CN=svc-osticket,CN=Users,DC=demo,DC=lab</code></td></tr>
+  <tr><td>Search Base</td><td><code>DC=demo,DC=lab</code></td></tr>
+  <tr><td>LDAP Schema</td><td><code>Microsoft Active Directory</code></td></tr>
+  <tr><td>Authentication Modes</td><td>Client + Staff (oba uključena)</td></tr>
+  <tr><td>Mapiranje atributa</td><td><code>sAMAccountName</code> (username), <code>mail</code> (email), <code>displayName</code> (ime)</td></tr>
+</table>
+
+<h3>11.3 Priprema AD korisnika i grupe</h3>
+<p>Napravljena je globalna bezbednosna grupa <code>osticket-agents</code> u <code>OU=IT_Sektor,DC=demo,DC=lab</code>, sa članovima <code>tdelic</code> i <code>hsokolovic</code>.</p>
+<table>
+  <tr><th>Korisnik</th><th>mail</th><th>displayName</th></tr>
+  <tr><td><code>ahadzic</code></td><td>ahadzic@demo.lab</td><td>Amar Hadzic</td></tr>
+  <tr><td><code>lkovacevic</code></td><td>lkovacevic@demo.lab</td><td>Lejla Kovacevic</td></tr>
+  <tr><td><code>tdelic</code></td><td>tdelic@demo.lab</td><td>Tarik Delic</td></tr>
+  <tr><td><code>smehmedovic</code></td><td>smehmedovic@demo.lab</td><td>Selma Mehmedovic</td></tr>
+  <tr><td><code>hsokolovic</code></td><td>hsokolovic@demo.lab</td><td>Haris Sokolovic</td></tr>
+  <tr><td><code>nimamovic</code></td><td>nimamovic@demo.lab</td><td>Nejra Imamovic</td></tr>
+</table>
+<div class="note"><strong>Bitno:</strong> kada se prijava radi kao <code>ime@demo.lab</code>, plugin traži korisnika po <code>mail</code> atributu. Ako AD nalog nema <code>mail</code>, prijava sa mejlom pada iako je lozinka tačna. Zato su <code>mail</code> i <code>displayName</code> popunjeni za sve demo korisnike.</div>
+
+<h3>11.4 Rezultati testa</h3>
+<table>
+  <tr><th>Test</th><th>Rezultat</th></tr>
+  <tr><td>StartTLS bind kao <code>svc-osticket</code></td><td><span class="badge b-done">OK</span> — <code>u:DEMO\svc-osticket</code></td></tr>
+  <tr><td>Agent <code>tdelic</code> + domenska lozinka (username)</td><td><span class="badge b-done">OK</span> — Dashboard</td></tr>
+  <tr><td>Agent <code>tdelic@demo.lab</code> + domenska lozinka (mail)</td><td><span class="badge b-done">OK</span> — Dashboard</td></tr>
+  <tr><td>Agent + pogrešna lozinka</td><td><span class="badge b-done">OK</span> — pristup odbijen</td></tr>
+  <tr><td>Klijent <code>tdelic@demo.lab</code> + domenska lozinka</td><td><span class="badge b-done">OK</span> — ulogovan, korisnik automatski kreiran</td></tr>
+  <tr><td>Dokaz da autentifikaciju radi AD</td><td><code>badPwdCount</code> se povećao posle pogrešne lozinke; <code>lastLogon</code> osvežen</td></tr>
+  <tr><td>Članovi grupe <code>osticket-agents</code> preko LDAP-a</td><td><span class="badge b-done">OK</span> — <code>tdelic</code>, <code>hsokolovic</code></td></tr>
+</table>
+<p>Testna lozinka domenskog korisnika <code>tdelic</code> u labu je <code>&lt;DOMENSKA_LOZINKA&gt;</code> (postavljena preko SAMR-a, vidi 13).</p>
+
+<div class="bad"><strong>Ograničenje:</strong> stock LDAP plugin 0.6.2 <strong>nema</strong> mapiranje AD grupe na osTicket rolu. Uloga (agent/admin) se i dalje dodeljuje u osTicket-u pri kreiranju agenta, a grupa <code>osticket-agents</code> služi kao evidencija i kao izvor za „Add Agent from directory". Za automatsko mapiranje grupa→rola potreban je dodatni plugin ili izmena koda.</div>
+
+<h3>11.5 Dokazi (screenshot-ovi)</h3>
+<div class="shot"><img src="screenshots/01-client-portal.png" alt="Klijentski portal"><p class="cap">Slika 1 — Klijentski portal „Demo Helpdesk“ (<code>/osticket/</code>)</p></div>
+<div class="shot"><img src="screenshots/02-agent-login.png" alt="Agentska prijava"><p class="cap">Slika 2 — Agentska prijava (<code>/osticket/scp/login.php</code>)</p></div>
+<div class="shot"><img src="screenshots/03-admin-dashboard.png" alt="Admin panel"><p class="cap">Slika 3 — Admin panel posle prijave</p></div>
+<div class="shot"><img src="screenshots/04-ldap-plugin.png" alt="LDAP plugin"><p class="cap">Slika 4 — Instaliran i aktivan LDAP plugin</p></div>
+<div class="shot"><img src="screenshots/05-ldap-plugin-config.png" alt="LDAP konfiguracija"><p class="cap">Slika 5 — LDAP konfiguracija (StartTLS, bind DN, search base)</p></div>
+<div class="shot"><img src="screenshots/06-agent-dashboard-ad.png" alt="Agent prijavljen domenskim nalogom"><p class="cap">Slika 6 — Agent <code>tdelic</code> prijavljen <strong>domenskom lozinkom</strong></p></div>
+<div class="shot"><img src="screenshots/07-client-portal-ad.png" alt="Klijent prijavljen domenskim nalogom"><p class="cap">Slika 7 — Klijent <code>tdelic@demo.lab</code> prijavljen domenskim nalogom</p></div>
+
+<h2>12. Komande koje moraš da znaš</h2>
+<table>
+  <tr><th>Komanda</th><th>Šta radi — prosto</th></tr>
+  <tr><td><code>sudo</code></td><td>izvrši sledeću komandu kao administrator (root)</td></tr>
+  <tr><td><code>ip -br a</code></td><td>prikaži mrežne kartice i njihove IP adrese, kratko</td></tr>
+  <tr><td><code>ip route</code></td><td>prikaži tabelu ruta; traži se <code>default via ...</code></td></tr>
+  <tr><td><code>ping -c2 IP</code></td><td>pošalji 2 paketa i proveri dostupnost</td></tr>
+  <tr><td><code>getent hosts ime</code></td><td>razreši ime isto kao što to rade aplikacije</td></tr>
+  <tr><td><code>resolvectl status ens33</code></td><td>koji DNS interfejs stvarno koristi</td></tr>
+  <tr><td><code>cat fajl</code></td><td>prikaži sadržaj fajla</td></tr>
+  <tr><td><code>sudo nano fajl</code></td><td>uređivanje fajla (Ctrl+O snimi, Ctrl+X izađi)</td></tr>
+  <tr><td><code>cp a b</code></td><td>kopiraj (koristi se za backup: <code>fajl</code> → <code>fajl.bak</code>)</td></tr>
+  <tr><td><code>chmod 600 fajl</code></td><td>samo root sme da čita i menja fajl</td></tr>
+  <tr><td><code>chown www-data:www-data fajl</code></td><td>daj vlasništvo web serveru</td></tr>
+  <tr><td><code>sed -i 's/staro/novo/g' fajl</code></td><td>zameni tekst u fajlu, u mestu</td></tr>
+  <tr><td><code>netplan generate</code></td><td>proveri sintaksu mrežne konfiguracije</td></tr>
+  <tr><td><code>netplan try</code></td><td>probno primeni uz automatski rollback za 120 s</td></tr>
+  <tr><td><code>netplan apply</code></td><td>trajno primeni mrežnu konfiguraciju</td></tr>
+  <tr><td><code>systemctl status servis</code></td><td>da li servis radi</td></tr>
+  <tr><td><code>systemctl restart servis</code></td><td>restartuj servis</td></tr>
+  <tr><td><code>systemctl reload apache2</code></td><td>ponovo učitaj konfiguraciju bez prekida rada</td></tr>
+  <tr><td><code>apt update</code></td><td>osveži listu paketa (ne instalira ništa)</td></tr>
+  <tr><td><code>apt install -y paket</code></td><td>instaliraj paket bez pitanja</td></tr>
+  <tr><td><code>dpkg -l paket | grep ^ii</code></td><td>proveri da li je paket instaliran</td></tr>
+  <tr><td><code>timedatectl</code></td><td>vreme, zona, da li je sat sinhronizovan</td></tr>
+  <tr><td><code>chronyc sources -v</code></td><td>izvori vremena (<code>^*</code> izabran, <code>^?</code> odbijen)</td></tr>
+  <tr><td><code>realm discover demo.lab</code></td><td>ima li domena i gde mu je kontroler</td></tr>
+  <tr><td><code>realm join --user=... demo.lab</code></td><td>pridruži mašinu domenu</td></tr>
+  <tr><td><code>realm list</code></td><td>na koje domene je mašina priključena</td></tr>
+  <tr><td><code>id korisnik@demo.lab</code></td><td>proveri domenski nalog i njegove grupe</td></tr>
+  <tr><td><code>su - korisnik@demo.lab</code></td><td>prijavi se domenskim nalogom</td></tr>
+  <tr><td><code>sssctl domain-status demo.lab</code></td><td>da li je veza sa domenom aktivna</td></tr>
+  <tr><td><code>wget URL</code></td><td>skini fajl sa interneta</td></tr>
+  <tr><td><code>unzip fajl.zip -d folder</code></td><td>raspakuj arhivu u zadati folder</td></tr>
+  <tr><td><code>mysql -u korisnik -p</code></td><td>prijavi se u bazu</td></tr>
+  <tr><td><code>sudo mysql -e "SQL"</code></td><td>izvrši SQL bez ulaska u prompt</td></tr>
+  <tr><td><code>ls -l /putanja/</code></td><td>prikaži fajlove sa dozvolama i vlasnikom</td></tr>
+  <tr><td><code>tail -20 /var/log/... </code></td><td>poslednjih 20 linija loga — za dijagnostiku</td></tr>
+</table>
+
+<h2>13. Problemi koje smo rešili</h2>
+<table>
+  <tr><th>Simptom</th><th>Uzrok</th><th>Rešenje</th></tr>
+  <tr><td>Server nema internet, VM ima adresu van mreže</td><td>NAT mreža <code>192.168.72.x</code>, a gost statički <code>192.168.31.x</code></td><td>prebaciti adapter na Bridged (ili gosta u <code>192.168.72.x</code>)</td></tr>
+  <tr><td>Gateway ne odgovara</td><td>upisan <code>192.168.31.2</code>, a ruter je <code>192.168.31.1</code></td><td>ispraviti default rutu</td></tr>
+  <tr><td>Nema interneta, a ping do gateway-a radi</td><td>DNS ne prosleđuje upite</td><td>forwarder na DC: <code>Set-DnsServerForwarder</code></td></tr>
+  <tr><td><code>getent hosts demo.lab</code> prazno</td><td>DNS pokazuje na ruter, ne na DC</td><td>netplan → <code>nameservers: 192.168.31.10</code></td></tr>
+  <tr><td><code>cat /etc/netplan/*.yaml</code> → Permission denied</td><td>fajl je <code>600 root:root</code></td><td>koristi <code>sudo cat</code></td></tr>
+  <tr><td><code>netplan apply</code> → Permission denied</td><td>komanda pokrenuta bez <code>sudo</code></td><td><code>sudo netplan apply</code></td></tr>
+  <tr><td>Paste u terminalu ne radi</td><td>VMware clipboard / nema <code>open-vm-tools</code></td><td>SSH sa hosta ili <code>sudo apt install open-vm-tools</code></td></tr>
+  <tr><td><code>chronyc ntpdata</code> → „501 Not authorised“</td><td>komanda dozvoljena samo root-u</td><td><code>sudo chronyc ntpdata ...</code></td></tr>
+  <tr><td><code>apt install</code> → „Unable to locate package“</td><td>tipfeler u imenu paketa</td><td>proveri tačan naziv (<code>packagekit</code>, ne <code>packagegekit</code>)</td></tr>
+  <tr><td><code>apt</code> pokušava IPv6 i visi</td><td>DNS vraća AAAA, a IPv6 rute nema</td><td><code>Acquire::ForceIPv4 "true";</code></td></tr>
+  <tr><td><code>realm discover</code> prazan</td><td>nema SRV zapisa / DNS nije DC</td><td>DNS = DC + A/PTR zapisi</td></tr>
+  <tr><td>„Clock skew too great“ pri join-u</td><td>satovi nisu usklađeni</td><td>chrony / <code>timedatectl</code></td></tr>
+  <tr><td>AD odbija promenu lozinke preko LDAP-a: <code>unwillingToPerform</code> / <code>WILL_NOT_PERFORM</code></td><td>direktan <code>unicodePwd</code> upis nije prošao ni preko LDAPS-a</td><td>resetovati preko SAMR-a: <code>rpcclient -U 'Administrator%lozinka' DC -c "setuserinfo2 tdelic 23 NovaLozinka"</code> (ili PowerShell <code>Set-ADAccountPassword</code>)</td></tr>
+  <tr><td>Prijava sa <code>ime@demo.lab</code> pada iako je lozinka tačna</td><td>AD nalog nema <code>mail</code> atribut, a plugin po njemu traži korisnika</td><td>dodati <code>mail</code> (i <code>displayName</code>) na AD nalog</td></tr>
+  <tr><td>Agent se ne može prijaviti domenskom lozinkom</td><td>agent u osTicket-u još koristi lokalni backend</td><td>Administration → Agents → agent → Authentication backend = <code>AD demo.lab</code> (u bazi <code>ldap.p1i2</code>)</td></tr>
+  <tr><td>VMware konzola ne prima tastaturu i miš</td><td>VMware input injection blokiran na hostu</td><td>raditi preko SSH-a sa hosta (<code>ssh demir@192.168.31.20</code>)</td></tr>
+  <tr><td><code>php manage.php agent list</code> → <code>fclose(): null</code> TypeError</td><td>nedostatak u CLI modulu na PHP 8.5</td><td>bezopasno — komanda ipak ispiše rezultat pre greške</td></tr>
+</table>
+
+<h2>14. Status i šta sledi</h2>
+<table>
+  <tr><th>Faza</th><th>Status</th></tr>
+  <tr><td>Windows Server u pravoj mreži, DNS i forwarder</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>Ubuntu mreža (fiksna IP, gateway, DNS, search domen)</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>DNS i internet kroz DC</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>Vreme (chrony; DC odbijen zbog disperzije, javni NTP radi)</td><td><span class="badge b-prog">DELIMIČNO</span></td></tr>
+  <tr><td>Pridruživanje domenu <code>demo.lab</code> + domenska prijava</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>LAMP + MariaDB baza za osTicket</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>osTicket install + podešavanja</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>LDAP plugin + AD prijava (agent i klijent)</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>AD grupa <code>osticket-agents</code> + popunjeni <code>mail</code>/<code>displayName</code></td><td><span class="badge b-done">GOTOVO</span></td></tr>
+  <tr><td>Mapiranje AD grupa na osTicket role</td><td><span class="badge b-prog">DELIMIČNO</span> — stock plugin ne podržava</td></tr>
+  <tr><td>Test-plan i dokumentacija</td><td><span class="badge b-done">GOTOVO</span></td></tr>
+</table>
+
+<h3>Šta je ostalo / preporuke za produkciju</h3>
+<ol>
+  <li><strong>LDAPS umesto StartTLS-a:</strong> preći na <code>ldaps://192.168.31.10:636</code> sa validnim sertifikatom, umesto StartTLS-a i <code>LDAPTLS_REQCERT=never</code>.</li>
+  <li><strong>PHP 8.4:</strong> osTicket 1.18.4 zvanično podržava 8.2–8.4; trenutni 8.5.4 radi, ali 8.4 je bezbedniji izbor za produkciju.</li>
+  <li><strong>Mapiranje grupa→rola:</strong> ako je potrebno automatski dodeljivati admin/agent ulogu na osnovu AD grupe, potreban je dodatni plugin ili izmena LDAP plugina.</li>
+  <li><strong>Email pipeline:</strong> podesiti SMTP/IMAP nalog (npr. <code>helpdesk@demo.lab</code>) da bi tiketi mogli da dolaze i odlaze mejlom.</li>
+  <li><strong>Backup:</strong> redovno čuvati bazu <code>osticket</code> i <code>include/ost-config.php</code>.</li>
+  <li><strong>Chrony:</strong> uskladiti vreme sa DC-om (trenutno javni NTP radi, DC se odbija zbog disperzije).</li>
+</ol>
+
+<div class="ok"><strong>Suština projekta u tri rečenice:</strong> Windows Server je izvor identiteta (domen i DNS), Ubuntu je izvor usluge (web aplikacija). Da bi se povezali, moraju deliti istu mrežu, isti DNS i isto vreme. Kada se to poklopi, jedan domenski nalog otvara i Windows i tiketing sistem — i to je hibridno okruženje.</div>
+
+</body>
+</html>
