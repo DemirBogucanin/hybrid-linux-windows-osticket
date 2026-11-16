@@ -117,4 +117,4 @@ export VM_PASS='...'
 
 ## License
 
-Educational / laboratory project. Do not deploy the lab credentials or self-signed TLS setup to production.
+[MIT](LICENSE) — educational / laboratory project. Do not deploy the lab credentials or the self-signed TLS setup to production.
